@@ -53,7 +53,8 @@ function prepareBottleRuntimeDirectories(bottlePath) {
 }
 
 function assertBottleSafe(bottlePath, { allowInternalZ = false } = {}) {
-  const resolvedBottle = validateBottlePath(bottlePath);
+  const bottleInput = validateBottlePath(bottlePath);
+  const resolvedBottle = fs.realpathSync(bottleInput);
   const dosDevices = path.join(resolvedBottle, 'dosdevices');
   assertPathInside(resolvedBottle, dosDevices, { label: 'Bottle dosdevices 目录', rejectSymlinks: true, allowMissing: false });
   assertPathInside(resolvedBottle, path.join(resolvedBottle, 'drive_c'), { label: 'Bottle C: 盘', rejectSymlinks: true, allowMissing: false });
