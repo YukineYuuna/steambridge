@@ -130,6 +130,7 @@ function assertPathInside(basePath, targetPath, { label = '路径', allowMissing
   const targetReal = resolveForComparison(targetResolved);
   const lexicalInside = isPathInside(baseResolved, targetResolved);
   if (!isPathInside(baseReal, targetReal)) {
+    if (rejectSymlinks && lexicalInside) throw new Error(`${label}不能包含符号链接。`);
     throw new Error(`${label}${lexicalInside ? '不能跳出允许目录' : '不在允许目录内'}。`);
   }
 

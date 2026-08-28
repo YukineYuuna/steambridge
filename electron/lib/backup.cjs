@@ -49,7 +49,12 @@ async function copyTreeSecure(sourcePath, targetPath, sourceRoot, options = {}) 
     if (stat.isSymbolicLink()) {
       const linkTarget = await fsp.readlink(source);
       const resolvedTarget = path.resolve(path.dirname(source), linkTarget);
-      assertPathInside(sourceRoot, resolvedTarget, { label: `备份符号链接 ${entry.name}` });
+      try {
+        assertPathInside(sourceRoot, resolvedTarget, { label: `备份符号链接 ${entry.name}` });
+      } catch (error) {
+        if (/不在允许目录内/.test(String(error.message))) throw new Error(`备份符号链接 ${entry.name}不能跳出允许目录。`);
+        throw error;
+      }
       await fsp.symlink(linkTarget, target, process.platform === 'win32' ? 'junction' : undefined);
       continue;
     }

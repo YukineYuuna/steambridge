@@ -27,12 +27,13 @@ test('backup creates metadata and preserves internal symlinks', async (context) 
   const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'steambridge-backup-'));
   context.after(() => fsp.rm(root, { recursive: true, force: true }));
   const bottle = await makeBottle(root);
-  if (process.platform !== 'win32') await fsp.symlink('../drive_c', path.join(bottle, 'dosdevices'), 'dir').catch(() => {});
+  if (process.platform !== 'win32') await fsp.symlink('drive_c', path.join(bottle, 'drive_c-link'), 'dir').catch(() => {});
   const backupsRoot = path.join(root, 'backups');
   const backup = await createBackup({ sourcePath: bottle, backupsRoot, enginePath: '/opt/wine/bin/wine' });
   assert.equal(backup.schema, 1);
   assert.ok(backup.fileCount >= 1);
   assert.equal(fs.existsSync(path.join(backup.path, 'drive_c', 'users', 'player', 'userdata.vdf')), true);
+  if (process.platform !== 'win32') assert.equal(fs.lstatSync(path.join(backup.path, 'drive_c-link')).isSymbolicLink(), true);
   assert.equal(fs.existsSync(path.join(backup.path, BACKUP_METADATA_FILE)), true);
   assert.equal((await listBackups(backupsRoot)).length, 1);
 });
