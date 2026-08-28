@@ -1,0 +1,11 @@
+node_modules/
+dist/
+release/
+coverage/
+.DS_Store
+*.log
+playwright-report/
+test-results/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

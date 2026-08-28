@@ -1,0 +1,116 @@
+name: Release macOS
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            flag: --arm64
+          - arch: x64
+            flag: --x64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check signing and notarization secrets
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          for required in CERTIFICATE_BASE64 CERTIFICATE_PASSWORD KEYCHAIN_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            test -n "${!required}" || { echo "Missing required secret: $required" >&2; exit 1; }
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Import Developer ID certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/steambridge-signing.keychain-db"
+          echo "$CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run check
+      - name: Build signed and notarized artifacts
+        run: npm run build:mac -- ${{ matrix.flag }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'true'
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Verify signatures
+        run: |
+          set -euo pipefail
+          APP_COUNT=0
+          while IFS= read -r -d '' app_path; do
+            APP_COUNT=$((APP_COUNT + 1))
+            executable="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app_path/Contents/Info.plist")"
+            lipo -info "$app_path/Contents/MacOS/$executable" | tee "$RUNNER_TEMP/lipo.txt"
+            grep -Eq '${{ matrix.arch == 'arm64' && 'arm64' || 'x86_64' }}' "$RUNNER_TEMP/lipo.txt"
+            codesign --verify --deep --strict --verbose=2 "$app_path"
+            codesign -dv --verbose=4 "$app_path" 2> "$RUNNER_TEMP/codesign.txt"
+            grep -q 'TeamIdentifier=' "$RUNNER_TEMP/codesign.txt"
+            grep -q 'Authority=Developer ID Application:' "$RUNNER_TEMP/codesign.txt"
+            spctl --assess --type execute --verbose=2 "$app_path"
+            stapler validate "$app_path"
+          done < <(find release -type d -name '*.app' -not -path '*/Contents/Frameworks/*' -print0)
+          test "$APP_COUNT" -gt 0
+      - name: Test install from DMG and ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          DMG_PATH="$(find release -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          ZIP_PATH="$(find release -maxdepth 1 -type f -name '*.zip' -print -quit)"
+          test -n "$DMG_PATH"; test -n "$ZIP_PATH"
+          MOUNT_POINT="$RUNNER_TEMP/steambridge-dmg"
+          INSTALL_DIR="$RUNNER_TEMP/steambridge-install"
+          mkdir -p "$INSTALL_DIR"
+          mkdir -p "$MOUNT_POINT"
+          hdiutil attach "$DMG_PATH" -nobrowse -readonly -mountpoint "$MOUNT_POINT"
+          ditto "$MOUNT_POINT/SteamBridge.app" "$INSTALL_DIR/SteamBridge-from-dmg.app"
+          hdiutil detach "$MOUNT_POINT"
+          codesign --verify --deep --strict "$INSTALL_DIR/SteamBridge-from-dmg.app"
+          spctl --assess --type execute "$INSTALL_DIR/SteamBridge-from-dmg.app"
+          mkdir -p "$INSTALL_DIR/from-zip"
+          ditto -x -k "$ZIP_PATH" "$INSTALL_DIR/from-zip"
+          codesign --verify --deep --strict "$INSTALL_DIR/from-zip/SteamBridge.app"
+          spctl --assess --type execute "$INSTALL_DIR/from-zip/SteamBridge.app"
+          find release -maxdepth 1 -type f \( -name '*.dmg' -o -name '*.zip' \) -print0 \
+            | xargs -0 shasum -a 256 > release/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SteamBridge-signed-${{ matrix.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.zip
+            release/SHA256SUMS.txt
