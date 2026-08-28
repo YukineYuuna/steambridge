@@ -123,32 +123,35 @@ async function readVdf(filePath) {
 }
 
 async function findLibraryRoots(bottlePath) {
+  const bottleInput = path.resolve(bottlePath);
   let bottleReal;
   let driveCReal;
   try {
-    bottleReal = fs.realpathSync(path.resolve(bottlePath));
+    bottleReal = fs.realpathSync(bottleInput);
     driveCReal = fs.realpathSync(path.join(bottleReal, 'drive_c'));
   } catch {
     return [];
   }
   if (!isPathInside(bottleReal, driveCReal)) return [];
-  const steamRoot = steamRootForBottle(bottleReal);
+  const steamRoot = steamRootForBottle(bottleInput);
   let steamRootReal;
   try { steamRootReal = fs.realpathSync(steamRoot); } catch { return []; }
   if (!isPathInside(driveCReal, steamRootReal)) return [];
-  const roots = new Set([steamRootReal]);
+  // Return paths using the spelling supplied by the caller. macOS commonly
+  // aliases /var to /private/var; canonical paths are still used for checks.
+  const roots = new Set([steamRoot]);
   const data = await readVdf(path.join(steamRootReal, 'steamapps/libraryfolders.vdf'));
   const libraries = data?.libraryfolders ?? data?.LibraryFolders ?? {};
   for (const value of Object.values(libraries)) {
     const libraryPath = typeof value === 'string' ? value : value?.path;
     if (!libraryPath) continue;
-    const hostPath = windowsPathToHost(libraryPath, bottleReal);
+    const hostPath = windowsPathToHost(libraryPath, bottleInput);
     // A Steam VDF is untrusted input. Do not let Z: or a symlink make a scan
     // walk arbitrary macOS directories without an explicit future opt-in.
     if (!hostPath || !isPathInside(bottleReal, hostPath)) continue;
     try {
       const realHostPath = fs.realpathSync(hostPath);
-      if (isPathInside(bottleReal, realHostPath)) roots.add(realHostPath);
+      if (isPathInside(bottleReal, realHostPath)) roots.add(hostPath);
     } catch {
       // Ignore library paths that do not exist or cannot be resolved safely.
     }

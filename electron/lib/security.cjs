@@ -100,49 +100,67 @@ function isPathInside(basePath, targetPath) {
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
+function resolveForComparison(targetPath) {
+  const resolved = path.resolve(targetPath);
+  let current = resolved;
+  const missing = [];
+  while (true) {
+    try {
+      const real = fs.realpathSync(current);
+      return missing.reverse().reduce((parent, segment) => path.join(parent, segment), real);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      const parent = path.dirname(current);
+      if (parent === current) return resolved;
+      missing.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
 function assertPathInside(basePath, targetPath, { label = '路径', allowMissing = true, rejectSymlinks = false } = {}) {
+  const baseResolved = path.resolve(basePath);
   let baseReal;
   try {
-    baseReal = fs.realpathSync(path.resolve(basePath));
+    baseReal = fs.realpathSync(baseResolved);
   } catch {
     throw new Error(`${label}基准目录不存在。`);
   }
   const targetResolved = path.resolve(targetPath);
-  if (!isPathInside(baseReal, targetResolved)) throw new Error(`${label}不在允许目录内。`);
-
-  const relative = path.relative(baseReal, targetResolved);
-  let current = baseReal;
-  const segments = relative.split(path.sep).filter(Boolean);
-  for (const [index, segment] of segments.entries()) {
-    current = path.join(current, segment);
-    let stat;
-    try {
-      stat = fs.lstatSync(current);
-    } catch (error) {
-      if (error.code === 'ENOENT' && allowMissing) break;
-      throw new Error(`${label}无法安全解析。`);
-    }
-    if (stat.isSymbolicLink()) {
-      if (rejectSymlinks) throw new Error(`${label}不能包含符号链接。`);
-      let realCurrent;
-      try { realCurrent = fs.realpathSync(current); } catch { throw new Error(`${label}无法安全解析。`); }
-      if (!isPathInside(baseReal, realCurrent)) throw new Error(`${label}不能跳出允许目录。`);
-      current = realCurrent;
-    } else if (!stat.isDirectory() && index < segments.length - 1) {
-      throw new Error(`${label}包含非目录路径组件。`);
-    }
+  const targetReal = resolveForComparison(targetResolved);
+  const lexicalInside = isPathInside(baseResolved, targetResolved);
+  if (!isPathInside(baseReal, targetReal)) {
+    throw new Error(`${label}${lexicalInside ? '不能跳出允许目录' : '不在允许目录内'}。`);
   }
 
-  try {
-    const realTarget = fs.realpathSync(targetResolved);
-    if (!isPathInside(baseReal, realTarget)) throw new Error(`${label}不能跳出允许目录。`);
-    if (rejectSymlinks && realTarget !== targetResolved) throw new Error(`${label}不能包含符号链接。`);
-    return realTarget;
-  } catch (error) {
-    if (error.code === 'ENOENT' && allowMissing) return targetResolved;
-    if (error.message?.includes(`${label}`)) throw error;
-    throw new Error(`${label}无法安全解析。`);
+  // Walk the user's lexical path to catch symlink components. If the two
+  // spellings differ only by a macOS alias such as /var -> /private/var,
+  // the canonical boundary check above is authoritative and this walk is
+  // intentionally skipped.
+  if (lexicalInside) {
+    const relative = path.relative(baseResolved, targetResolved);
+    let current = baseResolved;
+    const segments = relative.split(path.sep).filter(Boolean);
+    for (const [index, segment] of segments.entries()) {
+      current = path.join(current, segment);
+      let stat;
+      try {
+        stat = fs.lstatSync(current);
+      } catch (error) {
+        if (error.code === 'ENOENT' && allowMissing) break;
+        throw new Error(`${label}无法安全解析。`);
+      }
+      if (stat.isSymbolicLink()) {
+        if (rejectSymlinks) throw new Error(`${label}不能包含符号链接。`);
+        let realCurrent;
+        try { realCurrent = fs.realpathSync(current); } catch { throw new Error(`${label}无法安全解析。`); }
+        if (!isPathInside(baseReal, realCurrent)) throw new Error(`${label}不能跳出允许目录。`);
+      } else if (!stat.isDirectory() && index < segments.length - 1) {
+        throw new Error(`${label}包含非目录路径组件。`);
+      }
+    }
   }
+  return targetReal;
 }
 
 function validateAbsolutePath(value, label) {
@@ -186,7 +204,9 @@ function validateBottlePath(value, { requireInitialized = true } = {}) {
   if (requireInitialized && !fs.existsSync(path.join(realPath, 'drive_c'))) {
     throw new Error('所选目录不是已初始化的 Wine Bottle。');
   }
-  return realPath;
+  // Preserve the user's spelling (notably /var vs /private/var on macOS)
+  // while all security comparisons use the canonical path above.
+  return resolved;
 }
 
 function resolveExistingPath(value) {
