@@ -20,6 +20,62 @@ SteamBridge 是面向 macOS 的 Windows Steam 游戏兼容启动器。它不创�
 - [Intel x64 ZIP](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-x64.zip)
 - [源代码包](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-source.zip) · [SHA-256 清单](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SHA256SUMS.txt)
 
+### 到底该下载哪个？
+
+只需要下载 **一个** 安装包，不要把 ARM64、x64、源代码包全部下载下来：
+
+1. 在 Mac 左上角点击 Apple 菜单 → **关于本机**。
+2. 如果看到“芯片：Apple M1/M2/M3/M4（或其他 Apple 芯片）”，请选择 **ARM64**。
+3. 如果看到“处理器：Intel”，请选择 **x64**。
+4. 同一架构下优先选 **DMG**：双击后把 SteamBridge 拖进“应用程序”文件夹，最适合新手。ZIP 与 DMG 功能相同，只是需要先解压；无法打开 DMG 时再选 ZIP。
+5. **源代码包**不是给普通用户安装的；`SHA256SUMS.txt` 只是用来核对下载文件完整性，也不是安装包。
+
+Apple 芯片也可以通过 Rosetta 运行 x64 程序，但 ARM64 是推荐选择。Intel Mac 不能运行 ARM64 包。安装 SteamBridge 后，还需要另行安装 Wine、Whisky 或 CrossOver；SteamBridge 本身不捆绑兼容引擎。
+
+## 热门游戏试用清单
+
+下面的清单用于决定“先试哪个”，不是官方认证，也不是对所有 Mac 的成功保证。游戏更新、macOS 版本、Apple 芯片型号和兼容引擎都会改变结果。首次尝试前请备份 Steam 空间，并把游戏当作“待验证”。
+
+### 更值得优先尝试：单机或不依赖内核反作弊
+
+这些游戏通常比强联网、内核反作弊游戏更适合先测试；建议使用较新的 CrossOver 或受支持的 Wine 构建，并从低画质开始。
+
+| 游戏 | Steam App ID | 主要提醒 |
+| --- | ---: | --- |
+| The Elder Scrolls V: Skyrim Special Edition | 489830 | 模组、启动器和图形插件可能需要单独处理 |
+| Fallout 4 | 377160 | 大型模组、高清材质和启动器会增加失败概率 |
+| The Witcher 3: Wild Hunt | 292030 | 画面要求高，Apple 芯片需留出足够内存和磁盘空间 |
+| Sekiro: Shadows Die Twice | 814380 | 单机为主，但可能需要调整图形 API 和手柄设置 |
+| ELDEN RING | 1245620 | 性能要求高，更新后可能需要重新验证 |
+| Cyberpunk 2077 | 1091500 | 负载很高，建议先确认 Mac 的内存和散热能力 |
+| Age of Empires II: Definitive Edition | 813780 | 联机和反作弊状态要以当前版本为准 |
+| Lethal Company | 1966720 | 联机依赖和 Mod 不保证可用 |
+| Phasmophobia | 739630 | VR、麦克风和多人功能可能受限 |
+
+### 可能启动，但必须重点验证
+
+| 游戏 | Steam App ID | 风险 |
+| --- | ---: | --- |
+| Grand Theft Auto V | 271590 | 故事模式和 Rockstar 启动器可能有机会；GTA Online、更新和反作弊不能保证 |
+| Counter-Strike 2 | 730 | 兼容性会随更新变化，受保护在线服务器和第三方反作弊可能不可用 |
+| Dead by Daylight | 381210 | Easy Anti-Cheat 是否允许进入在线模式取决于发行方当前配置 |
+
+### 明确不建议用 SteamBridge 尝试
+
+这些游戏已知依赖 Windows 内核反作弊、驱动或当前不允许兼容层的在线策略，SteamBridge 会显示限制或直接阻止启动：
+
+| 游戏 | Steam App ID | 原因 |
+| --- | ---: | --- |
+| Apex Legends | 1172470 | 反作弊不允许通过 Wine 进入在线模式 |
+| Destiny 2 | 1085660 | BattlEye 策略限制兼容层 |
+| Rust | 252490 | 官方服务器的 Easy Anti-Cheat 不支持 Wine |
+| Tom Clancy's Rainbow Six Siege | 359550 | BattlEye 在线模式通常无法通过兼容层运行 |
+| PUBG: BATTLEGROUNDS | 578080 | BattlEye 在线模式通常无法通过兼容层运行 |
+| Halo Infinite | 1240440 | 多人反作弊支持不稳定 |
+| Lost Ark | 1599340 | Easy Anti-Cheat 配置不允许 Wine |
+
+不要为了运行这些游戏去下载“反作弊补丁”、替换 DLL 或修改器；这既不能提供 Windows 内核，也可能导致账号处罚和主机风险。完整规则和状态含义见 [兼容性说明](docs/compatibility.md)。
+
 ## 一句话判断：这软件能不能让我玩 Windows-only 游戏？
 
 **有机会，但绝对不能保证。** 它更适合先尝试老一些的单机游戏和常见 DirectX 游戏；依赖 Windows 内核反作弊、特殊驱动、VR/USB、某些 DRM 或第三方启动器的游戏通常不能玩。游戏库的“待验证”只表示本地规则库没有结论，不表示兼容。

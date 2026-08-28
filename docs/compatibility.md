@@ -10,6 +10,32 @@
 
 规则位于 `electron/lib/compatibility.cjs`。规则应以发行方公开政策和可复现测试为依据，不能把 ProtonDB 的 Linux 结果直接等同于 macOS Wine 结果。
 
+## 热门游戏怎么选
+
+以下名单是“优先测试顺序”，不是官方保证。没有任何一款游戏能在所有 Mac、macOS、Wine/Whisky/CrossOver 版本上保证成功；首次测试前应备份 Steam 空间，并从低画质、单机模式开始。
+
+### 相对适合优先测试
+
+| 游戏 | App ID | 主要不确定性 |
+| --- | ---: | --- |
+| The Elder Scrolls V: Skyrim Special Edition | 489830 | 启动器、模组和图形插件 |
+| Fallout 4 | 377160 | 启动器、大型模组和高清材质 |
+| The Witcher 3: Wild Hunt | 292030 | 性能和图形 API |
+| Sekiro: Shadows Die Twice | 814380 | 图形 API、手柄和输入 |
+| ELDEN RING | 1245620 | 性能、更新和联机策略 |
+| Cyberpunk 2077 | 1091500 | 性能、内存和散热 |
+| Age of Empires II: Definitive Edition | 813780 | 联机和版本更新 |
+| Lethal Company | 1966720 | 联机和 Mod |
+| Phasmophobia | 739630 | 麦克风、VR 和多人功能 |
+
+### 需要重点验证
+
+`Grand Theft Auto V`（271590）的故事模式可能比 GTA Online 更容易启动，但 Rockstar 启动器、更新、在线服务和反作弊不保证；`Counter-Strike 2`（730）和 `Dead by Daylight`（381210）也可能只能运行部分模式。
+
+### 已知限制或不建议尝试
+
+`Apex Legends`（1172470）、`Destiny 2`（1085660）、`Rust`（252490）、`Tom Clancy's Rainbow Six Siege`（359550）、`PUBG: BATTLEGROUNDS`（578080）、`Halo Infinite`（1240440）和 `Lost Ark`（1599340）依赖当前不支持 Wine 的反作弊或驱动策略。SteamBridge 会阻止或标记它们，不应通过补丁、替换 DLL 或修改器绕过。
+
 ## 不能解决的问题
 
 SteamBridge 是用户态兼容启动器，不是 Windows 内核，也不是虚拟机。因此以下功能通常不可用：
