@@ -12,6 +12,14 @@ SteamBridge 是面向 macOS 的 Windows Steam 游戏兼容启动器。它不创�
 
 上传到 GitHub 后，推荐从 **Actions → Package macOS → Artifacts** 下载测试包：Apple 芯片选择 `SteamBridge-arm64`，Intel Mac 选择 `SteamBridge-x64`。这些包是未签名验证包，首次打开可能被 Gatekeeper 拦截；不要把它们当作已经公证的正式安装包。只有配置 Apple Developer ID Secrets 并通过 `release-macos.yml` 的签名、公证和安装验收后，才会发布正式 Release。
 
+当前可直接下载的预发布包：
+
+- [Apple 芯片 ARM64 DMG](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-arm64.dmg)
+- [Apple 芯片 ARM64 ZIP](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-arm64.zip)
+- [Intel x64 DMG](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-x64.dmg)
+- [Intel x64 ZIP](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-x64.zip)
+- [源代码包](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SteamBridge-0.1.0-source.zip) · [SHA-256 清单](https://github.com/YukineYuuna/steambridge/releases/download/preview-0.1.0/SHA256SUMS.txt)
+
 ## 一句话判断：这软件能不能让我玩 Windows-only 游戏？
 
 **有机会，但绝对不能保证。** 它更适合先尝试老一些的单机游戏和常见 DirectX 游戏；依赖 Windows 内核反作弊、特殊驱动、VR/USB、某些 DRM 或第三方启动器的游戏通常不能玩。游戏库的“待验证”只表示本地规则库没有结论，不表示兼容。
