@@ -10,7 +10,7 @@ SteamBridge 是面向 macOS 的 Windows Steam 游戏兼容启动器。它不创�
 
 当前版本 `0.1.0` 已完成主要功能、自动化检查和安全边界测试，但还不是经过 Apple 签名、公证和多台真实 Mac 验收的稳定版。Windows 开发环境已通过 Lint、46 项自动化测试、TypeScript/Vite 构建和高危依赖审计；当前工作环境不能执行 `codesign`、`spctl`、`stapler` 或真实 macOS 安装测试。
 
-上传到 GitHub 后，推荐从 **Actions → Package macOS → Artifacts** 下载测试包：Apple 芯片选择 `SteamBridge-arm64`，Intel Mac 选择 `SteamBridge-x64`。这些包是未签名验证包，首次打开可能被 Gatekeeper 拦截；不要把它们当作已经公证的正式安装包。只有配置 Apple Developer ID Secrets 并通过 `release-macos.yml` 的签名、公证和安装验收后，才会发布正式 Release。
+在 GitHub 上，推荐从 **Actions → Package macOS → Artifacts** 下载测试包：Apple 芯片选择 `SteamBridge-arm64`，Intel Mac 选择 `SteamBridge-x64`。这些包是未签名验证包，首次打开可能被 Gatekeeper 拦截；不要把它们当作已经公证的正式安装包。只有配置 Apple Developer ID Secrets 并通过 `release-macos.yml` 的签名、公证和安装验收后，才会发布正式 Release。
 
 当前可直接下载的预发布包：
 
